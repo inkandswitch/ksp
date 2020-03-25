@@ -1,0 +1,88 @@
+type Tag {
+  id: ID
+  """
+  name of the tag
+  """
+  name: String!
+}
+
+interface Link {
+  id: ID
+  """
+  Target resource of the link
+  """
+  target: Resource!
+  """
+  Name that link was encountered by
+  """
+  name: String
+  """
+  Titile that link was encountered by
+  """
+  title: String
+}
+
+"""
+Represents an inline link in markdown file.
+"""
+type InlineLink implements Link {
+  id: ID
+  target: Resource!
+  name: String
+  title: String
+}
+
+"""
+Represents a reference link in markdown file.
+"""
+type ReferenceLink implements Link {
+  id: ID
+  target: Resource!
+  name: String
+  title: String
+  """
+  Label it is referred by e.g. local-first in [Local-first software][local-first]
+  """
+  label: String
+}
+
+"""
+A resource local e.g. `file:///path/to/note.md` or remote `https://www.inkandswitch.com/local-first.html`.
+Can be application spcecific URLs as well.
+"""
+type Resource {
+  """
+  URL of the resource
+  """
+  url: String!
+  """
+  Resources this document links to
+  """
+  links: [Resource!]!
+  """
+  Resources that link to this document
+  """
+  backLinks: [Resource!]!
+  """
+  Tag associated to this document
+  """
+  tags: [Tag!]!
+  """
+  Similar resources
+  """
+  similar: [Resource!]!
+}
+
+"""
+A resource with a semantically close, describing similar concepts.
+For details see http://text2vec.org/similarity.html
+"""
+type SimilarResource {
+  target: Resource!
+}
+
+union Connection = ReferenceLink | InlineLink | Tag | SimilarResource
+
+type Query {
+  connections(url: String): [Connection!]
+}
