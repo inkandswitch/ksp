@@ -1,8 +1,7 @@
 use dirs;
 use juniper::FieldResult;
 use r2d2_sqlite::SqliteConnectionManager;
-use rusqlite::{params, Connection, Statement};
-use std::path::Path;
+use rusqlite::{params, Connection};
 use std::{include_str, io};
 
 pub type DecodeResult<T> = Result<T, rusqlite::Error>;

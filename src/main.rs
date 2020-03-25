@@ -3,8 +3,6 @@ mod data_store;
 use async_std::task;
 use data_store::{DataStore, Link, Tag};
 use juniper::{EmptyMutation, FieldResult, RootNode};
-use r2d2_sqlite::SqliteConnectionManager;
-use rusqlite::{params, Connection, Statement};
 use tide::{Request, Response, Server};
 
 pub struct State {
