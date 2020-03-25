@@ -30,9 +30,9 @@ dependencies = [
 
 [[package]]
 name = "async-h1"
-version = "1.0.1"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bcbb3d7a430e805ce4b9382ebd9ea357296bc46e116315009ef04358daef587b"
+checksum = "5e5ab8d40149b94ac5d12a751a9d50d2a9f05526d176897a5bf23438862bdaab"
 dependencies = [
  "async-std",
  "byte-pool",
@@ -90,9 +90,9 @@ checksum = "f8aac770f1885fd7e387acedd76065302551364496e46b3dd00860b2f8359b9d"
 
 [[package]]
 name = "backtrace"
-version = "0.3.45"
+version = "0.3.46"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ad235dabf00f36301792cfe82499880ba54c6486be094d1047b02bacb67c14e8"
+checksum = "b1e692897359247cc6bb902933361652380af0f1b7651ae5c5013407f30e109e"
 dependencies = [
  "backtrace-sys",
  "cfg-if",
@@ -102,9 +102,9 @@ dependencies = [
 
 [[package]]
 name = "backtrace-sys"
-version = "0.1.34"
+version = "0.1.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ca797db0057bae1a7aa2eef3283a874695455cecf08a43bfb8507ee0ebc1ed69"
+checksum = "7de8aba10a69c8e8d7622c5710229485ec32e9d55fdad160ea559c086fdcd118"
 dependencies = [
  "cc",
  "libc",
@@ -560,9 +560,9 @@ dependencies = [
 
 [[package]]
 name = "http-types"
-version = "1.0.1"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "51bbd438d85828392b9d19a21e45e9aec2fe7f6112533cc7f907d20b2a198427"
+checksum = "fbffbd55791a5fa648f2d6e6fd6c5bf2467ef3fafc70916af8ca7a91fc511c6c"
 dependencies = [
  "anyhow",
  "async-std",

@@ -1,3 +1,4 @@
+use crate::data::{InputLink, Link, LinkKind, Tag};
 use dirs;
 use juniper::FieldResult;
 use r2d2_sqlite::SqliteConnectionManager;
@@ -15,20 +16,6 @@ where
 
 pub struct DataStore {
   pool: r2d2::Pool<SqliteConnectionManager>,
-}
-
-pub enum LinkKind {
-  Inline = 0,
-  Reference = 1,
-}
-
-pub struct Link {
-  pub(crate) kind: LinkKind,
-  pub(crate) referrer_url: String,
-  pub(crate) target_url: String,
-  pub(crate) name: String,
-  pub(crate) title: String,
-  pub(crate) identifier: Option<String>,
 }
 
 impl RowDecoder for Link {
@@ -55,11 +42,6 @@ impl RowDecoder for Link {
       title,
     })
   }
-}
-
-pub struct Tag {
-  pub(crate) tag: String,
-  pub(crate) target_url: String,
 }
 
 impl RowDecoder for Tag {
@@ -111,6 +93,45 @@ impl DataStore {
     let mut rows = select.query(params![url])?;
     let records = decode_rows(&mut rows, Tag::decode_row)?;
     Ok(records)
+  }
+  pub(crate) fn add_links(&self, referrer_url: &str, links: Vec<InputLink>) -> FieldResult<()> {
+    let connection = self.pool.get()?;
+    for link in links {
+      match link.kind {
+        LinkKind::Inline => {
+          let mut insert = connection.prepare_cached(include_str!("insert_inline_link.sql"))?;
+          insert.execute(params![
+            referrer_url,
+            link.target_url,
+            link.name,
+            link.title
+          ])?;
+        }
+        LinkKind::Reference => {
+          let mut insert = connection.prepare_cached(include_str!("insert_reference_link.sql"))?;
+
+          insert.execute(params![
+            referrer_url,
+            link.target_url,
+            match &link.identifier {
+              Some(name) => name,
+              None => &link.name,
+            },
+            link.name,
+            link.title
+          ])?;
+        }
+      }
+    }
+    Ok(())
+  }
+  pub(crate) fn add_tags(&self, url: &str, tags: Vec<String>) -> FieldResult<()> {
+    let connection = self.pool.get()?;
+    for tag in tags {
+      let mut insert = connection.prepare_cached(include_str!("insert_tag.sql"))?;
+      insert.execute(params![url, tag])?;
+    }
+    Ok(())
   }
 }
 
