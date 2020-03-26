@@ -1,0 +1,12 @@
+[package]
+name = "scanner"
+version = "0.1.0"
+authors = ["Irakli Gozalishvili <contact@gozala.io>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+async-std = { version = "1.5.0", features = ["attributes"] }
+dirs = "2.0.2"
+ignore = "0.4.13"

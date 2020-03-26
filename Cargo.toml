@@ -2,4 +2,7 @@
 
 members = [
   "daemon",
+  "scanner",
 ]
+
+default-members = ["daemon"]
