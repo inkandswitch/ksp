@@ -1,0 +1,20 @@
+[package]
+name = "knowledge_server"
+version = "0.1.0"
+authors = ["Irakli Gozalishvili <contact@gozala.io>"]
+edition = "2018"
+
+
+[dependencies]
+async-std = { version = "1.5.0", features = ["attributes"] }
+async-h1 = "1.0.1"
+http-types = "1.0.1"
+futures = { version = "0.3.4", features = ["compat"] }
+juniper = { git = "https://github.com/gozala/juniper", branch = "async-await", features = ["async"] }
+tide = "0.6.0"
+rusqlite = "0.21.0"
+r2d2_sqlite = "0.14.0"
+r2d2 = "0.8.8"
+dirs = "2.0.2"
+
+
