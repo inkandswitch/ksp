@@ -1,8 +1,12 @@
 [workspace]
 
 members = [
+  "base",
   "daemon",
   "scanner",
 ]
 
 default-members = ["daemon"]
+
+[patch.crates-io]
+pulldown-cmark = { git = 'https://github.com/gozala/pulldown-cmark', branch = 'link-id' } 

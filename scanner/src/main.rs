@@ -1,7 +1,8 @@
+mod markdown;
+mod resource;
 mod scanner;
-use scanner::activate;
 
 #[async_std::main]
-async fn main() {
-    activate().await
+async fn main() -> std::io::Result<()> {
+    scanner::activate().await
 }

@@ -1,5 +1,5 @@
 [package]
-name = "scanner"
+name = "knowledge-server-scanner"
 version = "0.1.0"
 authors = ["Irakli Gozalishvili <contact@gozala.io>"]
 edition = "2018"
@@ -10,3 +10,9 @@ edition = "2018"
 async-std = { version = "1.5.0", features = ["attributes"] }
 dirs = "2.0.2"
 ignore = "0.4.13"
+pulldown-cmark = "0.7.0"
+knowledge-server-base={path = "../base"}
+url = "2.1.1"
+async-trait = "0.1.27"
+frontmatter = "0.3.0"
+yaml-rust = "0.3"

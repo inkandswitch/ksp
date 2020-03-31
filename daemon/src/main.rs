@@ -1,43 +1,31 @@
-mod data;
-mod schema;
-mod store;
-use async_std::task;
-use schema::{schema, State};
-use tide::{Request, Response, Server};
-
-async fn handle_graphiql(_: Request<State>) -> Response {
-  Response::new(200)
-    .body_string(juniper::http::graphiql::graphiql_source("/graphql"))
-    .set_header("content-type", "text/html;charset=utf-8")
-}
-
-async fn handle_graphql(mut cx: Request<State>) -> Response {
-  // Need to do this because future returned by juniper is not sendable,
-  // which I think is because it has not benig updated to use never versions
-  // of futures.
-  task::block_on(async {
-    let query: juniper::http::GraphQLRequest = cx
-      .body_json()
-      .await
-      .expect("be able to deserialize the graphql request");
-
-    let schema = schema(); // probably worth making the schema a singleton using lazy_static library
-    let response = query.execute_async(&schema, &cx.state()).await;
-    let status = if response.is_ok() { 200 } else { 400 };
-
-    Response::new(status)
-      .body_json(&response)
-      .expect("be able to serialize the graphql response")
-  })
-}
+use knowledge_server_base::server;
+use knowledge_server_scanner::scanner;
+use std::env;
+use std::process::{Command, Stdio};
 
 #[async_std::main]
 async fn main() -> std::io::Result<()> {
-  let state = crate::schema::init()?;
-  let mut service = Server::with_state(state);
-  service.at("/").get(tide::redirect("/graphiql"));
-  service.at("/graphql").post(handle_graphql);
-  service.at("/graphiql").get(handle_graphiql);
-  service.listen("0.0.0.0:8080").await?;
+  let args: Vec<String> = env::args().collect();
+  let mode: &str = args.get(1).map(|s| s.as_str()).unwrap_or("");
+  match mode {
+    "--scanner" => {
+      scanner::activate().await?;
+    }
+    "--server" => {
+      server::activate().await?;
+    }
+    _ => {
+      println!("Starting service");
+
+      let scanner = Command::new(&args[0])
+        .arg("--scanner")
+        .stdin(Stdio::piped())
+        .spawn()?;
+      println!("Scanner started {:}", scanner.id());
+
+      server::activate().await?;
+      println!("Server started");
+    }
+  }
   Ok(())
 }
