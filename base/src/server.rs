@@ -1,6 +1,9 @@
 use crate::schema::{schema, State};
 use async_std::task;
-use tide::{Request, Response, Server};
+use async_trait::async_trait;
+use futures::future::BoxFuture;
+use std::sync::RwLock;
+use tide::{Middleware, Next, Request, Response, Server};
 
 async fn handle_graphiql(_: Request<State>) -> Response {
   Response::new(200)
@@ -28,12 +31,64 @@ async fn handle_graphql(mut cx: Request<State>) -> Response {
   })
 }
 
-pub async fn activate() -> std::io::Result<()> {
+async fn handle_root_head(_request: Request<State>) -> Response {
+  Response::new(200)
+}
+
+struct Header {
+  key: &'static str,
+  value: &'static str,
+}
+
+struct Headers {
+  headers: RwLock<Vec<Header>>,
+}
+
+impl Headers {
+  fn new() -> Self {
+    let headers = vec![];
+    Headers {
+      headers: RwLock::new(headers),
+    }
+  }
+  fn set(mut self, key: &'static str, value: &'static str) -> Self {
+    if let Ok(headers) = self.headers.get_mut() {
+      headers.push(Header { key, value })
+    }
+    self
+  }
+}
+
+#[async_trait]
+impl<State: Send + Sync + 'static> Middleware<State> for Headers {
+  fn handle<'a>(
+    &'a self,
+    request: Request<State>,
+    next: Next<'a, State>,
+  ) -> BoxFuture<'a, Response> {
+    Box::pin(async move {
+      let mut response = next.run(request).await;
+      if let Ok(headers) = self.headers.read() {
+        for header in headers.iter() {
+          response = response.set_header(header.key, header.value);
+        }
+        response
+      } else {
+        response
+      }
+    })
+  }
+}
+
+pub async fn activate(address: &str) -> std::io::Result<()> {
   let state = crate::schema::init()?;
-  let mut service = Server::with_state(state);
-  service.at("/").get(tide::redirect("/graphiql"));
-  service.at("/graphql").post(handle_graphql);
-  service.at("/graphiql").get(handle_graphiql);
-  service.listen("0.0.0.0:8080").await?;
-  Ok(())
+  let headers = Headers::new().set("Server", "Knowledge-Server");
+  let mut server = Server::with_state(state);
+  server.middleware(headers);
+  server.at("/").get(tide::redirect("/graphiql"));
+  server.at("/").head(handle_root_head);
+  server.at("/graphql").post(handle_graphql);
+  server.at("/graphiql").get(handle_graphiql);
+
+  server.listen(address).await
 }

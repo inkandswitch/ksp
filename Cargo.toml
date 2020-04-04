@@ -2,11 +2,14 @@
 
 members = [
   "base",
-  "daemon",
   "scanner",
+  "program",
+  "syntax"
 ]
 
-default-members = ["daemon"]
+default-members = ["program"]
 
 [patch.crates-io]
-pulldown-cmark = { git = 'https://github.com/gozala/pulldown-cmark', branch = 'link-id' } 
+pulldown-cmark = { git = 'https://github.com/gozala/pulldown-cmark', branch = 'link-id' }
+juniper = { git = "https://github.com/gozala/juniper", branch = "async-await", features = ["async"] }
+commander-rust = { git = 'https://github.com/gozala/commander-rust' }

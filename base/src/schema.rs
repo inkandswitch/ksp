@@ -1,7 +1,7 @@
-use crate::data::{
-  InputResource, Link, LinkKind, Mutations, Query, Resource, SimilarResource, Tag,
-};
+pub use crate::data::Mutations;
+use crate::data::{InputResource, Link, LinkKind, Query, Resource, SimilarResource, Tag};
 use crate::store::DataStore;
+pub use juniper::FieldError;
 use juniper::{FieldResult, RootNode};
 use std::io;
 
@@ -104,10 +104,9 @@ impl Query {
   }
 }
 
-#[juniper::graphql_object(Context = State)]
 impl Mutations {
   /// Injests resource into knowledge base.
-  async fn ingest(state: &State, resource: InputResource) -> FieldResult<Resource> {
+  pub async fn ingest(state: &State, resource: InputResource) -> FieldResult<Resource> {
     if let Some(tags) = resource.tags {
       state.store.add_tags(&resource.url, tags)?;
     }
@@ -115,6 +114,13 @@ impl Mutations {
       state.store.add_links(&resource.url, links)?;
     }
     Ok(Resource { url: resource.url })
+  }
+}
+
+#[juniper::graphql_object(Context = State)]
+impl Mutations {
+  async fn ingest(state: &State, resource: InputResource) -> FieldResult<Resource> {
+    Mutations::ingest(state, resource).await
   }
 }
 

@@ -1,0 +1,13 @@
+[package]
+name = "syntax"
+version = "0.1.0"
+authors = ["Irakli Gozalishvili <contact@gozala.io>"]
+edition = "2018"
+
+[lib]
+proc-macro = true
+
+
+[dependencies]
+syn = { version = "1.0", features = ["full"] }
+quote = "1.0"

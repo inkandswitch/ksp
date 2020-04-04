@@ -8,9 +8,10 @@ edition = "2018"
 [dependencies]
 async-std = { version = "1.5.0", features = ["attributes"] }
 futures = { version = "0.3.4", features = ["compat"] }
-juniper = { git = "https://github.com/gozala/juniper", branch = "async-await", features = ["async"] }
+juniper = { version = "0.14.2", features = ["async"] }
 tide = "0.6.0"
 rusqlite = "0.21.0"
 r2d2_sqlite = "0.14.0"
 r2d2 = "0.8.8"
 dirs = "2.0.2"
+async-trait = "0.1.27"
