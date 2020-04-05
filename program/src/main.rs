@@ -33,7 +33,10 @@ fn daemon(cli: Cli) -> Result<()> {
     .arg("serve")
     .arg("--port")
     .arg(port)
+    // So that if anything is read from standard input, it will crash does to
+    // EOF immediately.
     .stdin(Stdio::null())
+    // If there is a write to stderror crash the process.
     .stderr(Stdio::null())
     .stdout(log)
     .spawn()?;
