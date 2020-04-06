@@ -11,14 +11,50 @@ resources identified by URLs (Local resources are represented via file:/// URLs)
 ### Usage
 
 At the moment no binaries are distributed, however you can build / run using
-[cargo][].
+[cargo][]. To create a (debug) build run:
 
 ```sh
-cargo run
+cargo build
 ```
 
-Once running you can explore protocol schema, execute queries / mutations using
-GraphQL IDE from http://localhost:8080/graphiql
+It will produce `./target/debug/knowledge-server` that you can use to do multiple
+things:
 
+#### Server
+
+You can start a knowledge-server by runnig:
+
+```sh
+./target/debug/knowledge-server serve
+```
+
+Once it's running you can explore protocol schema, execute queries / mutations
+using GraphQL IDE at http://localhost:8080/graphiql.
+
+#### Daemon
+
+You can spawn a knowledge-server as a daemon by runing:
+
+```sh
+./target/debug/knowledge-server deamon
+```
+
+#### Scan / Ingest content
+
+You can scan local filesystem and ingest markdown files into knowledge base
+by running (use your desired path instead):
+
+```sh
+./target/debug/knowledge-server scan ~/Notes
+```
+
+### Hacking Notes
+
+We ran into [issue][rust-lang/rls-vscode#755] with [rls-vscode][] extension. If
+you use vscode you may want to consider [rust analyzer][] instead.
+
+[rust-lang/rls-vscode#755]: https://github.com/rust-lang/rls-vscode/issues/755
 [cargo]: https://doc.rust-lang.org/cargo/ "Rust package manager"
 [graphql]: https://graphql.org/ "A query language for your API"
+[rls-vscode]: https://github.com/rust-lang/rls-vscode "Rust support for Visual Studio Code"
+[rust analyzer]: https://rust-analyzer.github.io/

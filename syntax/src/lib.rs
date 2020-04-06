@@ -2,8 +2,13 @@
 #![deny(missing_debug_implementations, nonstandard_style)]
 #![recursion_limit = "512"]
 
+// Had to add disable unused_imports warnings due to rust-analyzer bug
+// See: https://github.com/rust-analyzer/rust-analyzer/issues/3860
+#[allow(unused_imports)]
 use proc_macro::TokenStream;
+#[allow(unused_imports)]
 use quote::{quote, quote_spanned};
+#[allow(unused_imports)]
 use syn::spanned::Spanned;
 
 #[cfg(not(test))] // NOTE: exporting main breaks tests, we should file an issue.
