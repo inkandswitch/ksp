@@ -1321,7 +1321,7 @@ dependencies = [
 [[package]]
 name = "pulldown-cmark"
 version = "0.7.0"
-source = "git+https://github.com/gozala/pulldown-cmark?branch=link-id#2ea7808620a0804a7a0676d65aaab606f0b5b1d7"
+source = "git+https://github.com/gozala/pulldown-cmark#1ac14071268ca11489afad4acf45ed0ef5333c61"
 dependencies = [
  "bitflags",
  "getopts",
