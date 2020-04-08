@@ -58,6 +58,7 @@ async fn serve(cli: Cli) -> Result<()> {
 
 #[wait]
 #[option(-n, --dry-run, "Don't actually add the file(s), just show.")]
+#[option(-t, --tag <tags>, "Comma delimited list of tags applied to all findings.")]
 #[command(scan <path>, "Scans directory and submits all findings to knowledge-server")]
 async fn scan(path: String, cli: Cli) -> Result<()> {
     // Resolve the given path.
@@ -65,8 +66,15 @@ async fn scan(path: String, cli: Cli) -> Result<()> {
     base.push(path);
     println!("Scanning resources {:?}", base);
 
+    let tags_param = cli.get_or("tag", format!(""));
+    let tags = tags_param
+        .split(",")
+        .map(|tag| tag.trim())
+        .filter(|tag| !tag.is_empty())
+        .collect();
+
     let dry_run = cli.has("dry-run");
-    let n = scanner::scan(&base, dry_run).await?;
+    let n = scanner::scan(&base, &tags, dry_run).await?;
     println!("Ingested {:} files", n);
 
     Ok(())

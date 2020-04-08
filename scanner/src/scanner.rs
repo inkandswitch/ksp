@@ -2,6 +2,7 @@ use crate::markdown;
 use crate::resource::Resource;
 use async_std::io;
 use ignore::DirEntry;
+use knowledge_server_base::data::InputTag;
 use knowledge_server_base::schema::{init, FieldError, Mutations};
 use std::path::Path;
 
@@ -41,7 +42,7 @@ pub enum ScanError {
     Mutation(FieldError),
 }
 
-pub async fn scan(path: &Path, dry_run: bool) -> io::Result<usize> {
+pub async fn scan<'a>(path: &Path, tags: &Vec<&str>, dry_run: bool) -> io::Result<usize> {
     let entries = walk(path);
     let mut n = 0;
     let service = init()?;
@@ -49,7 +50,18 @@ pub async fn scan(path: &Path, dry_run: bool) -> io::Result<usize> {
     for entry in entries {
         let path = entry.path();
         let resource = Resource::from_file_path(path)?;
-        let data = markdown::read(&resource).await?;
+        let mut data = markdown::read(&resource).await?;
+        let mut resourceTags = data.tags.unwrap_or(vec![]);
+
+        for tag in tags {
+            resourceTags.push(InputTag {
+                name: format!("{:}", tag),
+                target_fragment: None,
+                target_location: None,
+            })
+        }
+        data.tags = Some(resourceTags);
+
         if dry_run {
             println!("{:#?}", data);
         } else {
