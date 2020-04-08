@@ -1,4 +1,4 @@
-INSERT OR IGNORE INTO
+INSERT OR REPLACE INTO
   reference_links
   (
     referrer_url,
