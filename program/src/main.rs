@@ -79,7 +79,7 @@ async fn main() -> Result<()> {
     if let Some(out) = app.out {
         out
     } else {
-        // If command was not matched, fallback to just starting server
+        // If no commands were matched just print out help
         println!("{:}", app);
         Ok(())
     }

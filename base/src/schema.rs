@@ -1,12 +1,14 @@
 pub use crate::data::Mutations;
-use crate::data::{InputResource, Link, LinkKind, Query, Resource, SimilarResource, Tag};
+use crate::data::{
+    InputResource, Link, LinkKind, Query, Resource, ResourceInfo, SimilarResource, Tag,
+};
 use crate::store::DataStore;
 pub use juniper::FieldError;
 use juniper::{FieldResult, RootNode};
 use std::io;
 
 pub struct State {
-  store: DataStore,
+    store: DataStore,
 }
 impl juniper::Context for State {}
 
@@ -14,123 +16,167 @@ impl juniper::Context for State {}
 // For web resources that roughly translates to bookmark tags.
 #[juniper::graphql_object(Context = State)]
 impl Tag {
-  fn tag(&self) -> &str {
-    &self.tag
-  }
-  fn target_url(&self) -> &str {
-    &self.target_url
-  }
+    /// tag name
+    fn name(&self) -> &str {
+        &self.name
+    }
+
+    fn fragment(&self) -> Option<String> {
+        self.target_fragment.clone()
+    }
+
+    fn location(&self) -> Option<String> {
+        self.target_location.clone()
+    }
+
+    fn target(&self) -> Resource {
+        Resource::from(&self.target_url)
+    }
 }
 
 /// Represents an inline link in markdown file.
 #[juniper::graphql_object(Context = State)]
 impl Link {
-  fn kind(&self) -> LinkKind {
-    self.kind
-  }
-  /// Name that link was encountered by
-  fn name(&self) -> &str {
-    &self.name
-  }
-  /// Titile that link was encountered by
-  fn title(&self) -> &str {
-    &self.title
-  }
+    /// link kind in markdown terms which is either reference link or an
+    /// iniline link.
+    fn kind(&self) -> LinkKind {
+        self.kind
+    }
+    /// Name that link was encountered by
+    fn name(&self) -> &str {
+        &self.name
+    }
+    /// Titile that link was encountered by
+    fn title(&self) -> &str {
+        &self.title
+    }
 
-  /// Label it is referred by
-  /// e.g. In [Local-first software][local-first] it is "local-first"
-  fn identifier(&self) -> Option<String> {
-    match &self.identifier {
-      Some(name) => Some(String::from(name)),
-      None => None,
+    /// Label it is referred by
+    /// e.g. In [Local-first software][local-first] it is "local-first"
+    fn identifier(&self) -> Option<&String> {
+        self.identifier.as_ref()
     }
-  }
 
-  // Target resource of the link
-  async fn target(&self) -> Resource {
-    Resource {
-      url: self.target_url.clone(),
+    /// Target resource of the link
+    async fn target(&self) -> Resource {
+        Resource::from(&self.target_url)
     }
-  }
-  // Referrer resource
-  async fn referrer(&self) -> Resource {
-    Resource {
-      url: self.referrer_url.clone(),
+    /// Referrer resource
+    async fn referrer(&self) -> Resource {
+        Resource {
+            url: self.referrer_url.clone(),
+            info: Some(ResourceInfo {
+                cid: self.referrer_cid.clone(),
+                title: self.referrer_title.clone(),
+                description: self.referrer_description.clone(),
+            }),
+        }
     }
-  }
+    /// Fragment of the resource content where link was discovered.
+    fn fragment(&self) -> Option<&String> {
+        self.referrer_fragment.as_ref()
+    }
+    /// Location in the resource document where link was discovered.
+    fn location(&self) -> Option<&String> {
+        self.referrer_location.as_ref()
+    }
 }
 
 #[juniper::graphql_object(Context = State)]
 impl Resource {
-  /// URL of the resource
-  fn url(&self) -> &str {
-    &self.url
-  }
+    /// URL of the resource
+    fn url(&self) -> &str {
+        &self.url
+    }
+    /// information containing general information about the resource, kind of
+    /// a web-card for this resource.
+    async fn info(&self, state: &State) -> ResourceInfo {
+        if let Some(info) = &self.info {
+            info.clone()
+        } else {
+            if let Ok(info) = state.store.select_resource_by_url(&self.url) {
+                info
+            } else {
+                ResourceInfo {
+                    title: self.url.split("/").last().unwrap_or("").to_string(),
+                    description: format!(""),
+                    cid: None,
+                }
+            }
+        }
+    }
 
-  /// Resources this document links to
-  async fn links(&self, state: &State) -> FieldResult<Vec<Link>> {
-    state.store.links_by_referrer(&self.url)
-  }
+    /// Resources this document links to.
+    async fn links(&self, state: &State) -> FieldResult<Vec<Link>> {
+        state.store.select_links_by_referrer(&self.url)
+    }
 
-  // Resources that link to this document
-  async fn backLinks(&self, state: &State) -> FieldResult<Vec<Link>> {
-    state.store.links_by_target(&self.url)
-  }
+    /// Resources that link to this document.
+    async fn backLinks(&self, state: &State) -> FieldResult<Vec<Link>> {
+        state.store.select_links_by_target(&self.url)
+    }
 
-  // Tag associated to this document
-  async fn tags(&self, state: &State) -> FieldResult<Vec<Tag>> {
-    state.store.tags_by_target(&self.url)
-  }
+    /// Tag associated to this document.
+    async fn tags(&self, state: &State) -> FieldResult<Vec<Tag>> {
+        state.store.select_tags_by_target(&self.url)
+    }
 
-  // Similar resources
-  async fn similar(&self, _state: &State) -> Vec<SimilarResource> {
-    vec![]
-  }
+    // Resources similar to this one.
+    async fn similar(&self, _state: &State) -> Vec<SimilarResource> {
+        vec![]
+    }
 }
 
 #[juniper::graphql_object(Context = State)]
 impl SimilarResource {
-  async fn target(&self) -> Resource {
-    Resource {
-      url: self.target.clone(),
+    /// Other resource it is similar to.
+    async fn target(&self) -> Resource {
+        Resource::from(self.target.clone())
     }
-  }
 }
 
 #[juniper::graphql_object(Context = State)]
 impl Query {
-  async fn lookup(_state: &State, url: String) -> Resource {
-    Resource { url: url }
-  }
+    /// gives a resource for the given url.
+    async fn resource(_state: &State, url: String) -> Resource {
+        Resource::from(url)
+    }
+    /// finds tags for the given name.
+    async fn tags(state: &State, name: String) -> FieldResult<Vec<Tag>> {
+        state.store.select_tags_by_name(&name)
+    }
 }
 
 impl Mutations {
-  /// Injests resource into knowledge base.
-  pub async fn ingest(state: &State, resource: InputResource) -> FieldResult<Resource> {
-    if let Some(tags) = resource.tags {
-      state.store.add_tags(&resource.url, tags)?;
+    /// Injests resource into knowledge base.
+    pub async fn ingest(state: &State, input: InputResource) -> FieldResult<Resource> {
+        let resource = state.store.insert_resource(&input)?;
+
+        if let Some(tags) = input.tags {
+            state.store.insert_tags(&input.url, &tags)?;
+        }
+        if let Some(links) = input.links {
+            state.store.insert_links(&input.url, &links)?;
+        }
+
+        Ok(resource)
     }
-    if let Some(links) = resource.links {
-      state.store.add_links(&resource.url, links)?;
-    }
-    Ok(Resource { url: resource.url })
-  }
 }
 
 #[juniper::graphql_object(Context = State)]
 impl Mutations {
-  async fn ingest(state: &State, resource: InputResource) -> FieldResult<Resource> {
-    Mutations::ingest(state, resource).await
-  }
+    async fn ingest(state: &State, resource: InputResource) -> FieldResult<Resource> {
+        Mutations::ingest(state, resource).await
+    }
 }
 
 type Schema = RootNode<'static, Query, Mutations>;
 pub fn schema() -> Schema {
-  Schema::new(Query, Mutations)
+    Schema::new(Query, Mutations)
 }
 
 pub fn init() -> io::Result<State> {
-  let store = DataStore::open()?;
+    let store = DataStore::open()?;
 
-  Ok(State { store: store })
+    Ok(State { store: store })
 }

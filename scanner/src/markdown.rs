@@ -1,8 +1,8 @@
 use crate::frontmatter::read_metadata;
 use crate::resource::Resource;
 use core::ops::Range;
-use knowledge_server_base::data::{InputLink, InputResource, LinkKind};
-use pulldown_cmark::{Event as Token, LinkType, OffsetIter, Parser, Tag as Span};
+use knowledge_server_base::data::{InputLink, InputResource, InputTag, LinkKind};
+use pulldown_cmark::{Event as Token, LinkType, Parser, Tag as Span};
 use std::io::Result;
 
 pub async fn read(resource: &Resource) -> Result<InputResource> {
@@ -10,13 +10,17 @@ pub async fn read(resource: &Resource) -> Result<InputResource> {
     resource.read_to_string(&mut content).await?;
     let metadata = read_metadata(&content).await;
     let data = parse(&content, &resource).await;
+    let tags = metadata
+        .tags
+        .map(|tags| tags.into_iter().map(InputTag::from).collect());
 
     let resource = InputResource {
         url: resource.url().to_string(),
+        cid: None,
         links: Some(data.links),
-        tags: metadata.tags,
+        tags,
         title: metadata.title.or(data.title).unwrap_or(format!("")),
-        descripton: metadata
+        description: metadata
             .description
             .or(data.description)
             .unwrap_or(format!("")),
@@ -134,10 +138,15 @@ pub async fn parse(source: &str, resource: &Resource) -> ParseData {
                     (LinkContext::TableCell, range) => source[range.start..range.end].into(),
                 });
 
-                println!("{:?}", resource.url().join(&url));
+                let url = resource
+                    .url()
+                    .join(&url)
+                    .map(|a| a.to_string())
+                    .unwrap_or_else(|_| url.into_string());
+
                 let link = InputLink {
                     kind: LinkKind::from_type(link_type),
-                    target_url: url.into_string(),
+                    target_url: url,
                     name: String::from(&source[range.start..range.end]),
                     title: title.into_string(),
                     identifier: {
@@ -147,7 +156,8 @@ pub async fn parse(source: &str, resource: &Resource) -> ParseData {
                             Some(id.into_string())
                         }
                     },
-                    context: context_text,
+                    referrer_fragment: context_text,
+                    referrer_location: None,
                 };
                 links.push(link);
             }

@@ -1,0 +1,21 @@
+INSERT OR IGNORE INTO
+  reference_links
+  (
+    referrer_url,
+    referrer_fragment,
+    referrer_location,
+    target_url,
+    identifier,
+    name,
+    title
+  )
+VALUES
+  (
+    :referrer_url,
+    :referrer_fragment,
+    :referrer_location,
+    :target_url,
+    :identifier,
+    :name,
+    :title
+  );
