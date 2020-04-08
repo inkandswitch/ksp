@@ -55,8 +55,7 @@ CREATE TABLE IF NOT EXISTS tags (
 
   FOREIGN KEY (target_url) REFERENCES resources(url),
   PRIMARY KEY (target_url, name, target_fragment)
-)
-WITHOUT ROWID;
+);
 CREATE INDEX IF NOT EXISTS tags_idx_target_url on tags (target_url);
 CREATE INDEX IF NOT EXISTS tags_idx_tags on tags (target_url);
 
