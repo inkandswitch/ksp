@@ -51,16 +51,16 @@ pub async fn scan<'a>(path: &Path, tags: &Vec<&str>, dry_run: bool) -> io::Resul
         let path = entry.path();
         let resource = Resource::from_file_path(path)?;
         let mut data = markdown::read(&resource).await?;
-        let mut resourceTags = data.tags.unwrap_or(vec![]);
+        let mut resource_tags = data.tags.unwrap_or(vec![]);
 
         for tag in tags {
-            resourceTags.push(InputTag {
+            resource_tags.push(InputTag {
                 name: format!("{:}", tag),
                 target_fragment: None,
                 target_location: None,
             })
         }
-        data.tags = Some(resourceTags);
+        data.tags = Some(resource_tags);
 
         if dry_run {
             println!("{:#?}", data);
