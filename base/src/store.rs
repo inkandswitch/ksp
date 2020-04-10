@@ -23,6 +23,7 @@ where
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct DataStore {
     pool: r2d2::Pool<SqliteConnectionManager>,
 }
@@ -138,6 +139,7 @@ impl DataStore {
                 }
             }
         }
+
         Ok(())
     }
     pub(crate) fn insert_tags(&self, target_url: &str, tags: &Vec<InputTag>) -> FieldResult<()> {

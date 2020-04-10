@@ -7,6 +7,7 @@ pub use juniper::FieldError;
 use juniper::{FieldResult, RootNode};
 use std::io;
 
+#[derive(Debug, Clone)]
 pub struct State {
     store: DataStore,
 }
@@ -170,7 +171,7 @@ impl Mutations {
     }
 }
 
-type Schema = RootNode<'static, Query, Mutations>;
+pub type Schema = RootNode<'static, Query, Mutations>;
 pub fn schema() -> Schema {
     Schema::new(Query, Mutations)
 }
