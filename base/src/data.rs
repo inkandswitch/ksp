@@ -53,6 +53,7 @@ pub struct SimilarResource {
 
 #[derive(juniper::GraphQLInputObject, Clone, Debug)]
 pub struct InputLink {
+    #[graphql(name = "targetURL")]
     pub target_url: String,
 
     pub referrer_fragment: Option<String>,
