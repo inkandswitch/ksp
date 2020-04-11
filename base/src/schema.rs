@@ -1,10 +1,11 @@
 pub use crate::data::Mutations;
 use crate::data::{
-    InputResource, Link, LinkKind, Query, Resource, ResourceInfo, SimilarResource, Tag,
+    InputResource, Link, LinkKind, Open, Query, Resource, ResourceInfo, SimilarResource, Tag,
 };
 use crate::store::DataStore;
 pub use juniper::FieldError;
 use juniper::{FieldResult, RootNode};
+use open;
 use std::io;
 
 #[derive(Debug, Clone)]
@@ -168,6 +169,21 @@ impl Mutations {
 impl Mutations {
     async fn ingest(state: &State, resource: InputResource) -> FieldResult<Resource> {
         Mutations::ingest(state, resource).await
+    }
+    async fn open(_state: &State, url: String) -> Open {
+        if let Ok(status) = open::that(url) {
+            Open {
+                open_ok: true,
+                exit_ok: status.success(),
+                code: status.code(),
+            }
+        } else {
+            Open {
+                open_ok: false,
+                exit_ok: false,
+                code: None,
+            }
+        }
     }
 }
 

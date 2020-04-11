@@ -82,6 +82,13 @@ pub struct InputResource {
     pub tags: Option<Vec<InputTag>>,
 }
 
+#[derive(juniper::GraphQLObject, Clone, Debug)]
+pub struct Open {
+    pub open_ok: bool,
+    pub exit_ok: bool,
+    pub code: Option<i32>,
+}
+
 impl From<String> for Resource {
     fn from(url: String) -> Self {
         Resource {
