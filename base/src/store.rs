@@ -106,12 +106,15 @@ impl DataStore {
         links: &Vec<InputLink>,
     ) -> FieldResult<()> {
         let connection = self.pool.get()?;
+        let mut insert_inline =
+            connection.prepare_cached(include_str!("../sql/insert_inline_link.sql"))?;
+        let mut insert_reference =
+            connection.prepare_cached(include_str!("../sql/insert_reference_link.sql"))?;
+
         for link in links {
             match link.kind {
                 LinkKind::Inline => {
-                    let mut insert =
-                        connection.prepare_cached(include_str!("../sql/insert_inline_link.sql"))?;
-                    insert.execute_named(named_params! {
+                    insert_inline.execute_named(named_params! {
                         ":referrer_url": referrer_url,
                         ":referrer_fragment": link.referrer_fragment,
                         ":referrer_location": link.referrer_location,
@@ -121,10 +124,7 @@ impl DataStore {
                     })?;
                 }
                 LinkKind::Reference => {
-                    let mut insert = connection
-                        .prepare_cached(include_str!("../sql/insert_reference_link.sql"))?;
-
-                    insert.execute_named(named_params! {
+                    insert_reference.execute_named(named_params! {
                       ":referrer_url": referrer_url,
                         ":referrer_fragment": link.referrer_fragment,
                         ":referrer_location": link.referrer_location,
@@ -144,8 +144,8 @@ impl DataStore {
     }
     pub(crate) fn insert_tags(&self, target_url: &str, tags: &Vec<InputTag>) -> FieldResult<()> {
         let connection = self.pool.get()?;
+        let mut insert = connection.prepare_cached(include_str!("../sql/insert_tag.sql"))?;
         for tag in tags {
-            let mut insert = connection.prepare_cached(include_str!("../sql/insert_tag.sql"))?;
             insert.execute_named(named_params! {
               ":name": tag.name,
               ":target_url": target_url,
