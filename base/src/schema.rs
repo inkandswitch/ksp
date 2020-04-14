@@ -9,14 +9,13 @@ use log;
 use open;
 use std::io;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct State {
     pub store: DataStore,
 }
 impl State {
     pub fn new() -> io::Result<Self> {
         let store = DataStore::open()?;
-        // let loader = DataLoader::new(store);
 
         Ok(State { store })
     }

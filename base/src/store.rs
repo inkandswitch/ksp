@@ -40,13 +40,6 @@ pub struct DataStore {
     tags_by_target: Loader<String, Vec<Tag>, Error, TagsByTarget>,
     tags_by_name: Loader<String, Vec<Tag>, Error, TagsByName>,
 }
-impl fmt::Debug for DataStore {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("DataLoader")
-            .field("pool", &self.pool)
-            .finish()
-    }
-}
 
 impl DataStore {
     pub fn new(pool: Pool) -> Self {
@@ -180,6 +173,20 @@ impl DataStore {
             .load(name.to_string())
             .await
             .map_err(FieldError::from)
+    }
+}
+
+impl Clone for DataStore {
+    fn clone(&self) -> Self {
+        DataStore::new(self.pool.clone())
+    }
+}
+
+impl fmt::Debug for DataStore {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("DataLoader")
+            .field("pool", &self.pool)
+            .finish()
     }
 }
 

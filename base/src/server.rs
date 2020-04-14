@@ -24,16 +24,12 @@ async fn handle_graphql(mut request: Request<State>) -> Response {
     let query: juniper::http::GraphQLRequest =
         json.expect("be able to deserialize the graphql request");
 
-    let state = request.state();
+    let state = request.state().state.clone();
     let schema = &request.state().schema;
     let root = &schema.root;
-    // let state2 = &crate::schema::State {
-    //     // TODO: Should not clone here
-    //     loader: DataLoader::new(store),
-    // };
 
     // probably worth making the schema a singleton using lazy_static library
-    let response = query.execute_async(root, &state.state).await;
+    let response = query.execute_async(root, &state).await;
     let status = if response.is_ok() { 200 } else { 400 };
     log::info!("Responding to the graphl query");
 
