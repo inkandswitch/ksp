@@ -3,7 +3,7 @@ use crate::resource::Resource;
 use async_std::io;
 use ignore::DirEntry;
 use knowledge_server_base::data::InputTag;
-use knowledge_server_base::schema::{init, FieldError, Mutations};
+use knowledge_server_base::schema::{FieldError, Mutations, State};
 use std::path::Path;
 
 fn markdown_type() -> Result<ignore::types::Types, ignore::Error> {
@@ -45,7 +45,7 @@ pub enum ScanError {
 pub async fn scan<'a>(path: &Path, tags: &Vec<&str>, dry_run: bool) -> io::Result<usize> {
     let entries = walk(path);
     let mut n = 0;
-    let service = init()?;
+    let service = State::new()?;
 
     for entry in entries {
         let path = entry.path();

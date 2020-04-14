@@ -12,3 +12,4 @@ knowledge-server-base={path="../base"}
 dirs = "2.0.2"
 commander-rust = "1.2.1"
 syntax={path="../syntax"}
+env_logger = "0.7.1"

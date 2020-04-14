@@ -151,5 +151,7 @@ impl From<String> for InputTag {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Query;
+#[derive(Debug, Clone)]
 pub struct Mutations;

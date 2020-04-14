@@ -2,6 +2,7 @@
 
 use commander_rust::{command, entry, option, run, Cli};
 use dirs;
+use env_logger;
 use knowledge_server_base::server;
 use knowledge_server_scanner::scanner;
 use std::env;
@@ -83,6 +84,7 @@ async fn scan(path: String, cli: Cli) -> Result<()> {
 #[wait]
 #[entry]
 async fn main() -> Result<()> {
+    env_logger::init();
     let app = run!();
     if let Some(out) = app.out {
         out
