@@ -2,7 +2,6 @@ pub use crate::data::Mutations;
 use crate::data::{
     InputResource, Link, LinkKind, Open, Query, Resource, ResourceInfo, SimilarResource, Tag,
 };
-use crate::loader::DataLoader;
 use crate::store::DataStore;
 pub use juniper::FieldError;
 use juniper::{FieldResult, RootNode};
@@ -10,16 +9,16 @@ use log;
 use open;
 use std::io;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct State {
-    pub loader: DataLoader,
+    pub store: DataStore,
 }
 impl State {
     pub fn new() -> io::Result<Self> {
         let store = DataStore::open()?;
-        let loader = DataLoader::new(store);
+        // let loader = DataLoader::new(store);
 
-        Ok(State { loader })
+        Ok(State { store })
     }
 }
 impl juniper::Context for State {}
@@ -106,7 +105,7 @@ impl Resource {
         if let Some(info) = &self.info {
             info.clone()
         } else {
-            if let Ok(info) = state.loader.resource_info.load(self.url.clone()).await {
+            if let Ok(info) = state.store.find_resource_by_url(&self.url).await {
                 info
             } else {
                 ResourceInfo {
@@ -120,32 +119,17 @@ impl Resource {
 
     /// Resources this document links to.
     async fn links(&self, state: &State) -> FieldResult<Vec<Link>> {
-        state
-            .loader
-            .links_by_referrer
-            .load(self.url.clone())
-            .await
-            .map_err(FieldError::from)
+        state.store.find_links_by_referrer(&self.url).await
     }
 
     /// Resources that link to this document.
     async fn backLinks(&self, state: &State) -> FieldResult<Vec<Link>> {
-        state
-            .loader
-            .links_by_target
-            .load(self.url.clone())
-            .await
-            .map_err(FieldError::from)
+        state.store.find_links_by_target(&self.url).await
     }
 
     /// Tag associated to this document.
     async fn tags(&self, state: &State) -> FieldResult<Vec<Tag>> {
-        state
-            .loader
-            .tags_by_target
-            .load(self.url.clone())
-            .await
-            .map_err(FieldError::from)
+        state.store.find_tags_by_target(&self.url).await
     }
 
     // Resources similar to this one.
@@ -170,12 +154,7 @@ impl Query {
     }
     /// finds tags for the given name.
     async fn tags(state: &State, name: String) -> FieldResult<Vec<Tag>> {
-        state
-            .loader
-            .tags_by_name
-            .load(name)
-            .await
-            .map_err(FieldError::from)
+        state.store.find_tags_by_name(&name).await
     }
 }
 
@@ -183,13 +162,13 @@ impl Mutations {
     /// Injests resource into knowledge base.
     pub async fn ingest(state: &State, input: InputResource) -> FieldResult<Resource> {
         log::info!("Ingesting resource {:}", input.url);
-        let resource = state.loader.store.insert_resource(&input)?;
+        let resource = state.store.insert_resource(&input)?;
 
         if let Some(tags) = input.tags {
-            state.loader.store.insert_tags(&input.url, &tags)?;
+            state.store.insert_tags(&input.url, &tags)?;
         }
         if let Some(links) = input.links {
-            state.loader.store.insert_links(&input.url, &links)?;
+            state.store.insert_links(&input.url, &links)?;
         }
         log::info!("Resource was ingested {:}", input.url);
 

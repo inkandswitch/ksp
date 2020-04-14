@@ -1,6 +1,4 @@
-use crate::loader::DataLoader;
-use crate::schema::Schema;
-use crate::store::DataStore;
+use crate::schema::{Schema, State as SchemaState};
 use async_trait::async_trait;
 use futures::future::BoxFuture;
 use log;
@@ -10,7 +8,7 @@ use tide::{Middleware, Next, Request, Response, Server};
 #[derive(Debug)]
 struct State {
     pub schema: Schema,
-    pub store: DataStore,
+    pub state: SchemaState,
 }
 
 async fn handle_graphiql(_: Request<State>) -> Response {
@@ -26,16 +24,16 @@ async fn handle_graphql(mut request: Request<State>) -> Response {
     let query: juniper::http::GraphQLRequest =
         json.expect("be able to deserialize the graphql request");
 
-    let store = request.state().store.clone();
+    let state = request.state();
     let schema = &request.state().schema;
     let root = &schema.root;
-    let state2 = &crate::schema::State {
-        // TODO: Should not clone here
-        loader: DataLoader::new(store),
-    };
+    // let state2 = &crate::schema::State {
+    //     // TODO: Should not clone here
+    //     loader: DataLoader::new(store),
+    // };
 
     // probably worth making the schema a singleton using lazy_static library
-    let response = query.execute_async(root, state2).await;
+    let response = query.execute_async(root, &state.state).await;
     let status = if response.is_ok() { 200 } else { 400 };
     log::info!("Responding to the graphl query");
 
@@ -95,8 +93,10 @@ impl<State: Send + Sync + 'static> Middleware<State> for Headers {
 
 pub async fn activate(address: &str) -> std::io::Result<()> {
     let schema = Schema::new();
-    let store = DataStore::open()?;
-    let state = State { schema, store };
+    let state = State {
+        schema,
+        state: SchemaState::new()?,
+    };
     let headers = Headers::new().set("Server", "Knowledge-Server");
     let mut server = Server::with_state(state);
     server.middleware(headers);
