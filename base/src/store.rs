@@ -129,11 +129,12 @@ impl DataStore {
         log::info!("Inserting {:} resource tags into db", tags.len());
         let connection = self.pool.get()?;
         let mut insert = connection.prepare_cached(include_str!("../sql/insert_tag.sql"))?;
+        let no_fragment = String::new();
         for tag in tags {
             insert.execute_named(named_params! {
               ":name": tag.name,
               ":target_url": target_url,
-              ":target_fragment": tag.target_fragment,
+              ":target_fragment": tag.target_fragment.as_ref().unwrap_or(&no_fragment),
               ":target_location": tag.target_location,
             })?;
             log::info!("Add #{:} tag to {:}", tag.name, target_url);

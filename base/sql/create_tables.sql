@@ -48,16 +48,17 @@ CREATE INDEX IF NOT EXISTS reference_links_idx_identifier ON
 
 
 CREATE TABLE IF NOT EXISTS tags (
-  target_url Text,
+  target_url Text NOT NULL,
   name Text NOT NULL,
-  target_fragment Text,
+  target_fragment Text NOT NULL,
   target_location Text,
 
   FOREIGN KEY (target_url) REFERENCES resources(url),
   PRIMARY KEY (target_url, name, target_fragment)
-);
+)
+WITHOUT ROWID;
 CREATE INDEX IF NOT EXISTS tags_idx_target_url on tags (target_url);
-CREATE INDEX IF NOT EXISTS tags_idx_tags on tags (target_url);
+CREATE INDEX IF NOT EXISTS tags_idx_name on tags (name);
 
 
 CREATE VIEW IF NOT EXISTS
