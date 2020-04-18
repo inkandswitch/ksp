@@ -5,10 +5,13 @@ CREATE TABLE IF NOT EXISTS resources (
   title Text,
   description Text,
   cid Text,
+  icon Text,
+  image Text,
 
   PRIMARY KEY (url)
 )
 WITHOUT ROWID;
+
 
 CREATE TABLE IF NOT EXISTS inline_links(
   referrer_url Text,
@@ -69,6 +72,8 @@ SELECT
   resources.title as referrer_title,
   resources.description as referrer_description,
   resources.cid as referrer_cid,
+  resources.icon as referrer_icon,
+  resources.image as referrer_image,
   referrer_fragment,
   referrer_location,
 
@@ -91,6 +96,8 @@ SELECT
   resources.title as referrer_title,
   resources.description as referrer_description,
   resources.cid as referrer_cid,
+  resources.icon as referrer_icon,
+  resources.image as referrer_image,
   referrer_fragment,
   referrer_location,
   
@@ -107,4 +114,4 @@ ON
   reference_links.referrer_url = resources.url;
 
 
-SELECT * from view_links;
+PRAGMA user_version = 1;

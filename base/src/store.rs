@@ -66,6 +66,12 @@ impl DataStore {
     }
 
     pub(crate) fn create_tables(connection: &mut Connection) -> Result<(), rusqlite::Error> {
+        #[allow(unused_must_use)]
+        {
+            // It's ok if this fails. This is temporary workaround due to not using
+            // versions before.
+            connection.execute_batch(include_str!("../sql/migrate_tables.sql"));
+        }
         Ok(connection.execute_batch(include_str!("../sql/create_tables.sql"))?)
     }
     pub(crate) fn insert_resource(&self, input: &InputResource) -> DecodeResult<Resource> {
@@ -75,7 +81,9 @@ impl DataStore {
           ":url": input.url,
           ":title": input.title,
           ":description": input.description,
-          ":cid": input.cid
+          ":cid": input.cid,
+          ":icon": input.icon,
+          ":image": input.image
         })?;
 
         Ok(Resource::from(input))
@@ -203,13 +211,15 @@ impl RowDecoder for Link {
             referrer_cid: row.get(2)?,
             referrer_title: row.get(3)?,
             referrer_description: row.get(4)?,
-            referrer_fragment: row.get(5)?,
-            referrer_location: row.get(6)?,
+            referrer_icon: row.get(5)?,
+            referrer_image: row.get(6)?,
+            referrer_fragment: row.get(7)?,
+            referrer_location: row.get(8)?,
 
-            target_url: row.get(7)?,
-            identifier: row.get(8)?,
-            name: row.get(9)?,
-            title: row.get(10)?,
+            target_url: row.get(9)?,
+            identifier: row.get(10)?,
+            name: row.get(11)?,
+            title: row.get(12)?,
         })
     }
 }
@@ -231,6 +241,8 @@ impl RowDecoder for ResourceInfo {
             cid: row.get(0)?,
             title: row.get(1)?,
             description: row.get(2)?,
+            icon: row.get(3)?,
+            image: row.get(4)?,
         })
     }
 }
