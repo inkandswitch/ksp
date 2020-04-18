@@ -24,6 +24,8 @@ pub async fn read(resource: &Resource) -> Result<InputResource> {
             .description
             .or(data.description)
             .unwrap_or(format!("")),
+        icon: None,
+        image: None,
     };
 
     Ok(resource)

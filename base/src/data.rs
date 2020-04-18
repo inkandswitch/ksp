@@ -14,6 +14,8 @@ pub struct Link {
     pub referrer_cid: Option<String>,
     pub referrer_title: String,
     pub referrer_description: String,
+    pub referrer_icon: Option<String>,
+    pub referrer_image: Option<String>,
 
     pub referrer_fragment: Option<String>,
     pub referrer_location: Option<String>,
@@ -43,6 +45,8 @@ pub struct ResourceInfo {
     pub title: String,
     pub description: String,
     pub cid: Option<String>,
+    pub icon: Option<String>,
+    pub image: Option<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -80,6 +84,8 @@ pub struct InputResource {
     pub description: String,
     pub links: Option<Vec<InputLink>>,
     pub tags: Option<Vec<InputTag>>,
+    pub icon: Option<String>,
+    pub image: Option<String>,
 }
 
 #[derive(juniper::GraphQLObject, Clone, Debug)]
@@ -123,6 +129,8 @@ impl From<InputResource> for Resource {
                 cid: input.cid,
                 title: input.title,
                 description: input.description,
+                icon: input.icon,
+                image: input.image,
             }),
         }
     }
@@ -136,6 +144,8 @@ impl From<&InputResource> for Resource {
                 cid: input.cid.clone(),
                 title: input.title.clone(),
                 description: input.description.clone(),
+                icon: input.icon.clone(),
+                image: input.image.clone(),
             }),
         }
     }

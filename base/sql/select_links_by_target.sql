@@ -4,6 +4,8 @@ SELECT
   referrer_cid,
   referrer_title,
   referrer_description,
+  referrer_icon,
+  referrer_image,
   referrer_fragment,
   referrer_location,
   

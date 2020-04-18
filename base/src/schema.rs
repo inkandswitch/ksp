@@ -79,6 +79,8 @@ impl Link {
                 cid: self.referrer_cid.clone(),
                 title: self.referrer_title.clone(),
                 description: self.referrer_description.clone(),
+                icon: self.referrer_icon.clone(),
+                image: self.referrer_image.clone(),
             }),
         }
     }
@@ -111,6 +113,8 @@ impl Resource {
                     title: self.url.split("/").last().unwrap_or("").to_string(),
                     description: format!(""),
                     cid: None,
+                    icon: None,
+                    image: None,
                 }
             }
         }
