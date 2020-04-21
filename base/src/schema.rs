@@ -177,10 +177,6 @@ impl Query {
         let urls: Vec<String> = index.search_similar(&input, 10).await?;
         let resources = urls.iter().map(Resource::from).collect();
 
-        // for url in urls {
-        //     resources.push(Resource::from(url));
-        // }
-
         Ok(resources)
     }
 }

@@ -1,3 +1,4 @@
+use log;
 use std::convert::From;
 use std::fmt;
 use std::path::Path;
@@ -72,11 +73,7 @@ impl Schema {
 
     fn document_url(&self, doc: schema::Document) -> Result<String, Error> {
         let value = doc.get_first(self.url).ok_or(Error::URLReadError)?;
-
-        match value {
-            schema::Value::Bytes(bytes) => Ok(String::from_utf8(bytes.clone())?),
-            _ => Err(Error::URLReadError),
-        }
+        value.text().map(String::from).ok_or(Error::URLReadError)
     }
 }
 
@@ -123,7 +120,9 @@ impl IndexService {
         let top_docs = searcher.search(&keywords.into_query(), &TopDocs::with_limit(10))?;
         let mut similar = Vec::new();
         for (_score, address) in top_docs {
+            log::info!("Found match {:?} {:?}", &address, &_score);
             let doc = searcher.doc(address)?;
+            log::info!("Doc maps to {:?}", doc);
             let url = self.schema.document_url(doc)?;
 
             similar.push(url);
