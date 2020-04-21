@@ -86,6 +86,8 @@ pub struct InputResource {
     pub tags: Option<Vec<InputTag>>,
     pub icon: Option<String>,
     pub image: Option<String>,
+
+    pub content: Option<String>,
 }
 
 #[derive(juniper::GraphQLObject, Clone, Debug)]

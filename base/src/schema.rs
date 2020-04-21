@@ -2,23 +2,32 @@ pub use crate::data::Mutations;
 use crate::data::{
     InputResource, Link, LinkKind, Open, Query, Resource, ResourceInfo, SimilarResource, Tag,
 };
+use crate::index::IndexService;
 use crate::store::DataStore;
 pub use juniper::FieldError;
 use juniper::{FieldResult, RootNode};
 use log;
 use open;
 use std::io;
-
-#[derive(Debug, Clone)]
+use std::sync::Arc;
+#[derive(Debug)]
 pub struct State {
     pub store: DataStore,
+    pub index: Arc<IndexService>,
 }
 impl State {
     pub fn new() -> io::Result<Self> {
         let store = DataStore::open()?;
+        let index = Arc::new(IndexService::open().unwrap());
 
-        Ok(State { store })
+        Ok(State { store, index })
     }
+
+    // pub async fn execute<'a>(&'a self, request: &'a GraphQLRequest) -> GraphQLResponse<'a> {
+    //     let root = &self.schema.root;
+    //     let response: GraphQLResponse<'a> = request.execute_async(root, self).await;
+    //     response
+    // }
 }
 impl juniper::Context for State {}
 
@@ -137,6 +146,9 @@ impl Resource {
 
     // Resources similar to this one.
     async fn similar(&self, _state: &State) -> Vec<SimilarResource> {
+        // let index = &state.index;
+        // index.search_similar(input, 10);
+
         vec![]
     }
 }
@@ -159,6 +171,18 @@ impl Query {
     async fn tags(state: &State, name: String) -> FieldResult<Vec<Tag>> {
         state.store.find_tags_by_name(&name).await
     }
+
+    async fn similar(state: &State, input: String) -> FieldResult<Vec<Resource>> {
+        let index = &state.index;
+        let urls: Vec<String> = index.search_similar(&input, 10).await?;
+        let resources = urls.iter().map(Resource::from).collect();
+
+        // for url in urls {
+        //     resources.push(Resource::from(url));
+        // }
+
+        Ok(resources)
+    }
 }
 
 impl Mutations {
@@ -172,6 +196,11 @@ impl Mutations {
         }
         if let Some(links) = input.links {
             state.store.insert_links(&input.url, &links)?;
+        }
+
+        if let Some(content) = input.content {
+            let index = &state.index;
+            index.ingest(&input.url, &input.title, &content).await?;
         }
         log::info!("Resource was ingested {:}", input.url);
 
