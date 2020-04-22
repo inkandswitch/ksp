@@ -51,8 +51,15 @@ pub struct ResourceInfo {
 
 #[derive(Clone, Debug)]
 pub struct SimilarResource {
+    pub similarity_score: f32,
     // URL of the similar resource
-    pub target: String,
+    pub target_url: String,
+}
+
+#[derive(Clone, Debug)]
+pub struct SimilarResources {
+    pub keywords: Vec<String>,
+    pub resources: Vec<SimilarResource>,
 }
 
 #[derive(juniper::GraphQLInputObject, Clone, Debug)]

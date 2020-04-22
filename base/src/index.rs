@@ -1,3 +1,4 @@
+use crate::data::{SimilarResource, SimilarResources};
 use log;
 use std::convert::From;
 use std::fmt;
@@ -114,20 +115,33 @@ impl IndexService {
         let mut writer = self.writer.write()?;
         Ok(writer.commit()?)
     }
-    pub async fn search_similar(&self, input: &str, limit: usize) -> Result<Vec<String>, Error> {
+    pub async fn search_similar(
+        &self,
+        input: &str,
+        limit: usize,
+    ) -> Result<SimilarResources, Error> {
         let keywords = self.topterms.extract(limit, input);
+        let terms: Vec<String> = keywords
+            .terms()
+            .map(|t| t.text())
+            .map(String::from)
+            .collect();
         let searcher = self.reader.searcher();
         let top_docs = searcher.search(&keywords.into_query(), &TopDocs::with_limit(10))?;
         let mut similar = Vec::new();
-        for (_score, address) in top_docs {
-            log::info!("Found match {:?} {:?}", &address, &_score);
+
+        for (score, address) in top_docs {
+            log::info!("Found match {:?} {:?}", &address, &score);
             let doc = searcher.doc(address)?;
             log::info!("Doc maps to {:?}", doc);
-            let url = self.schema.document_url(doc)?;
-
-            similar.push(url);
+            let target_url = self.schema.document_url(doc)?;
+            similar.push(SimilarResource {
+                target_url,
+                similarity_score: score,
+            });
         }
-        Ok(similar)
+
+        Ok(SimilarResources { keywords:terms, resources: similar })
     }
 }
 

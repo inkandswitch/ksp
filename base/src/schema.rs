@@ -1,6 +1,7 @@
 pub use crate::data::Mutations;
 use crate::data::{
-    InputResource, Link, LinkKind, Open, Query, Resource, ResourceInfo, SimilarResource, Tag,
+    InputResource, Link, LinkKind, Open, Query, Resource, ResourceInfo, SimilarResource,
+    SimilarResources, Tag,
 };
 use crate::index::IndexService;
 use crate::store::DataStore;
@@ -154,10 +155,26 @@ impl Resource {
 }
 
 #[juniper::graphql_object(Context = State)]
+impl SimilarResources {
+    /// keywords by which similar resources were identified.
+    fn keywords(&self) -> Vec<String> {
+        self.keywords.clone()
+    }
+    /// Similar resources.
+    fn similar(&self) -> Vec<SimilarResource> {
+        self.resources.clone()
+    }
+}
+
+#[juniper::graphql_object(Context = State)]
 impl SimilarResource {
-    /// Other resource it is similar to.
-    async fn target(&self) -> Resource {
-        Resource::from(self.target.clone())
+    /// Similar resource.
+    fn resource(&self) -> Resource {
+        Resource::from(&self.target_url)
+    }
+    /// Score of similarity.
+    fn score(&self) -> f64 {
+        self.similarity_score as f64
     }
 }
 
@@ -172,12 +189,11 @@ impl Query {
         state.store.find_tags_by_name(&name).await
     }
 
-    async fn similar(state: &State, input: String) -> FieldResult<Vec<Resource>> {
+    async fn similar(state: &State, input: String) -> FieldResult<SimilarResources> {
         let index = &state.index;
-        let urls: Vec<String> = index.search_similar(&input, 10).await?;
-        let resources = urls.iter().map(Resource::from).collect();
+        let similar = index.search_similar(&input, 10).await?;
 
-        Ok(resources)
+        Ok(similar)
     }
 }
 
