@@ -158,11 +158,15 @@ impl Resource {
 impl SimilarResources {
     /// keywords by which similar resources were identified.
     fn keywords(&self) -> Vec<String> {
-        self.keywords.clone()
+        self.keywords
+            .terms()
+            .map(|t| t.text())
+            .map(String::from)
+            .collect()
     }
     /// Similar resources.
-    fn similar(&self) -> Vec<SimilarResource> {
-        self.resources.clone()
+    fn similar(&self, state: &State) -> FieldResult<Vec<SimilarResource>> {
+        Ok(state.index.search_with_keywords(&self.keywords, 10)?)
     }
 }
 
@@ -189,11 +193,9 @@ impl Query {
         state.store.find_tags_by_name(&name).await
     }
 
-    async fn similar(state: &State, input: String) -> FieldResult<SimilarResources> {
-        let index = &state.index;
-        let similar = index.search_similar(&input, 10).await?;
-
-        Ok(similar)
+    async fn similar(state: &State, input: String) -> SimilarResources {
+        let keywords = state.index.extract_keywords(&input, 10);
+        SimilarResources { keywords }
     }
 }
 

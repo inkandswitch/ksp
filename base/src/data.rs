@@ -1,5 +1,6 @@
 use juniper;
-pub use std::convert::From;
+use std::convert::From;
+use tique::topterms::Keywords;
 
 #[derive(juniper::GraphQLEnum, Clone, Copy, Debug)]
 pub enum LinkKind {
@@ -56,10 +57,10 @@ pub struct SimilarResource {
     pub target_url: String,
 }
 
-#[derive(Clone, Debug)]
+// TODO: Implement Debug
+#[derive(Clone)]
 pub struct SimilarResources {
-    pub keywords: Vec<String>,
-    pub resources: Vec<SimilarResource>,
+    pub keywords: Keywords,
 }
 
 #[derive(juniper::GraphQLInputObject, Clone, Debug)]

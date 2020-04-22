@@ -1,4 +1,4 @@
-use crate::data::{SimilarResource, SimilarResources};
+use crate::data::SimilarResource;
 use log;
 use std::convert::From;
 use std::fmt;
@@ -8,7 +8,7 @@ use std::sync::{Arc, PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use tantivy::collector::TopDocs;
 use tantivy::schema;
 use tantivy::{Index, IndexReader, IndexWriter, Opstamp};
-use tique::topterms::TopTerms;
+use tique::topterms::{Keywords, TopTerms};
 
 #[derive(Clone)]
 struct Schema {
@@ -115,21 +115,18 @@ impl IndexService {
         let mut writer = self.writer.write()?;
         Ok(writer.commit()?)
     }
-    pub async fn search_similar(
+    pub fn extract_keywords(&self, input: &str, limit: usize) -> Keywords {
+        self.topterms.extract(limit, input)
+    }
+    pub fn search_with_keywords(
         &self,
-        input: &str,
+        keywords: &Keywords,
         limit: usize,
-    ) -> Result<SimilarResources, Error> {
-        let keywords = self.topterms.extract(limit, input);
-        let terms: Vec<String> = keywords
-            .terms()
-            .map(|t| t.text())
-            .map(String::from)
-            .collect();
+    ) -> Result<Vec<SimilarResource>, Error> {
         let searcher = self.reader.searcher();
-        let top_docs = searcher.search(&keywords.into_query(), &TopDocs::with_limit(10))?;
+        let top_docs =
+            searcher.search(&keywords.clone().into_query(), &TopDocs::with_limit(limit))?;
         let mut similar = Vec::new();
-
         for (score, address) in top_docs {
             log::info!("Found match {:?} {:?}", &address, &score);
             let doc = searcher.doc(address)?;
@@ -140,8 +137,7 @@ impl IndexService {
                 similarity_score: score,
             });
         }
-
-        Ok(SimilarResources { keywords:terms, resources: similar })
+        Ok(similar)
     }
 }
 
