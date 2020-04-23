@@ -147,7 +147,7 @@ impl Resource {
 
     // Resources similar to this one.
     #[graphql(arguments(first(default = 5)))]
-    async fn similar(&self, first: i32, _state: &State) -> Vec<SimilarResource> {
+    async fn similar(&self, _first: i32, _state: &State) -> Vec<SimilarResource> {
         // let index = &state.index;
         // index.search_similar(input, 10);
 
