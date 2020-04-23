@@ -7,6 +7,7 @@ use std::string::FromUtf8Error;
 use std::sync::{Arc, PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use stopwords::{Stopwords, NLTK};
 use tantivy::collector::TopDocs;
+use tantivy::directory;
 use tantivy::schema;
 use tantivy::schema::{IndexRecordOption, TextFieldIndexing, TextOptions};
 use tantivy::tokenizer;
@@ -76,11 +77,8 @@ impl Schema {
     }
 
     fn index(&self, path: &Path) -> Result<Index, Error> {
-        let index =
-            Index::create_in_dir(path, self.schema.clone()).or_else(|error| match error {
-                tantivy::TantivyError::IndexAlreadyExists => Ok(Index::open_in_dir(path)?),
-                _ => Err(error),
-            })?;
+        let directory = tantivy::directory::MmapDirectory::open(path)?;
+        let index = tantivy::Index::open_or_create(directory, self.schema.clone())?;
 
         index
             .tokenizers()
@@ -178,6 +176,7 @@ impl fmt::Debug for IndexService {
 #[derive(Debug)]
 pub enum Error {
     IndexError(tantivy::TantivyError),
+    OpenIndexError(directory::error::OpenDirectoryError),
     ReadLockError,
     WriteLockError,
     URLDecodeError(FromUtf8Error),
@@ -192,6 +191,7 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Error::IndexError(error) => error.fmt(f),
+            Error::OpenIndexError(error) => error.fmt(f),
             Error::ReadLockError => write!(f, "Fiiled to create read lock on index"),
             Error::WriteLockError => write!(f, "Failed to create write lock on index"),
             Error::URLDecodeError(error) => error.fmt(f),
@@ -203,6 +203,12 @@ impl fmt::Display for Error {
             ),
             Error::IOError(error) => error.fmt(f),
         }
+    }
+}
+
+impl From<directory::error::OpenDirectoryError> for Error {
+    fn from(error: directory::error::OpenDirectoryError) -> Self {
+        Error::OpenIndexError(error)
     }
 }
 
