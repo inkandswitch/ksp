@@ -5,8 +5,11 @@ use std::fmt;
 use std::path::Path;
 use std::string::FromUtf8Error;
 use std::sync::{Arc, PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use stopwords::{Stopwords, NLTK};
 use tantivy::collector::TopDocs;
 use tantivy::schema;
+use tantivy::schema::{IndexRecordOption, TextFieldIndexing, TextOptions};
+use tantivy::tokenizer;
 use tantivy::{Index, IndexReader, IndexWriter, Opstamp};
 use tique::topterms::{Keywords, TopTerms};
 
@@ -24,6 +27,29 @@ impl fmt::Debug for Schema {
 }
 
 impl Schema {
+    pub fn tokenizer() -> tokenizer::TextAnalyzer {
+        let words = NLTK::stopwords(stopwords::Language::English)
+            .unwrap()
+            .iter()
+            .map(|word| word.to_string())
+            .collect();
+
+        tokenizer::TextAnalyzer::from(tokenizer::SimpleTokenizer)
+            .filter(tokenizer::RemoveLongFilter::limit(40))
+            .filter(tokenizer::LowerCaser)
+            .filter(tokenizer::StopWordFilter::remove(words))
+        // Disable stemmer as keywords appear to be stems instead of
+        // actual terms.
+        // .filter(tokenizer::Stemmer::new(tokenizer::Language::English))
+    }
+    pub fn indexer() -> TextFieldIndexing {
+        TextFieldIndexing::default()
+            .set_tokenizer("en_with_stopwords")
+            .set_index_option(IndexRecordOption::WithFreqsAndPositions)
+    }
+    pub fn text_options() -> TextOptions {
+        schema::TextOptions::default().set_indexing_options(Schema::indexer())
+    }
     pub fn new() -> Self {
         let mut schema = schema::SchemaBuilder::default();
         // Field corresponds to the resource URL. Because we want to be able
@@ -35,11 +61,11 @@ impl Schema {
         // frequency and term positions.
         // Field also has `STORED` flag which means that the field will also be
         // saved in a compressed row-oriented key-value store.
-        let title = schema.add_text_field("title", schema::TEXT | schema::STORED);
+        let title = schema.add_text_field("title", Schema::text_options());
 
         // Field `body` corresponds to content of the resource. It will have
         // full-text search, but not an ability to reconstruct it.
-        let body = schema.add_text_field("body", schema::TEXT);
+        let body = schema.add_text_field("body", Schema::text_options().set_stored());
 
         Schema {
             url,
@@ -55,14 +81,13 @@ impl Schema {
                 tantivy::TantivyError::IndexAlreadyExists => Ok(Index::open_in_dir(path)?),
                 _ => Err(error),
             })?;
+
+        index
+            .tokenizers()
+            .register("en_with_stopwords", Schema::tokenizer());
+
         Ok(index)
     }
-
-    // fn field(&self, name: &str) -> Result<schema::Field, Error> {
-    //     self.schema
-    //         .get_field(name)
-    //         .ok_or_else(|| Error::MissingField(name.to_string()))
-    // }
 
     fn document(&self, url: &str, title: &str, body: &str) -> Result<schema::Document, Error> {
         let mut document = schema::Document::new();
@@ -96,6 +121,7 @@ impl IndexService {
     pub fn activate(path: &Path) -> Result<Self, Error> {
         let schema = Schema::new();
         let index = schema.index(path)?;
+
         let topterms = TopTerms::new(&index, vec![schema.body])?;
         let reader = index.reader()?;
         let writer = Arc::new(RwLock::new(index.writer(50_000_000)?));

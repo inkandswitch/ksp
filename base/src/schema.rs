@@ -146,7 +146,8 @@ impl Resource {
     }
 
     // Resources similar to this one.
-    async fn similar(&self, _state: &State) -> Vec<SimilarResource> {
+    #[graphql(arguments(first(default = 5)))]
+    async fn similar(&self, first: i32, _state: &State) -> Vec<SimilarResource> {
         // let index = &state.index;
         // index.search_similar(input, 10);
 
@@ -165,8 +166,11 @@ impl SimilarResources {
             .collect()
     }
     /// Similar resources.
-    fn similar(&self, state: &State) -> FieldResult<Vec<SimilarResource>> {
-        Ok(state.index.search_with_keywords(&self.keywords, 10)?)
+    #[graphql(arguments(first(default = 5)))]
+    fn similar(&self, first: i32, state: &State) -> FieldResult<Vec<SimilarResource>> {
+        Ok(state
+            .index
+            .search_with_keywords(&self.keywords, first as usize)?)
     }
 }
 
@@ -193,8 +197,9 @@ impl Query {
         state.store.find_tags_by_name(&name).await
     }
 
-    async fn similar(state: &State, input: String) -> SimilarResources {
-        let keywords = state.index.extract_keywords(&input, 10);
+    #[graphql(arguments(first(default = 5)))]
+    async fn similar(state: &State, input: String, first: i32) -> SimilarResources {
+        let keywords = state.index.extract_keywords(&input, first as usize);
         SimilarResources { keywords }
     }
 }
