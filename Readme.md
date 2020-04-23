@@ -17,6 +17,18 @@ At the moment no binaries are distributed, however you can build / run using
 cargo build
 ```
 
+You may get a compilation error like this:
+
+```
+`#![feature]` may not be used on the stable release channel
+```
+
+In which case you can run the nightly build of cargo by running:
+
+```sh
+cargo +nightly build
+```
+
 It will produce `./target/debug/knowledge-server` that you can use to do multiple
 things:
 
@@ -54,7 +66,7 @@ We ran into [issue][rust-lang/rls-vscode#755] with [rls-vscode][] extension. If
 you use vscode you may want to consider [rust analyzer][] instead.
 
 [rust-lang/rls-vscode#755]: https://github.com/rust-lang/rls-vscode/issues/755
-[cargo]: https://doc.rust-lang.org/cargo/ "Rust package manager"
-[graphql]: https://graphql.org/ "A query language for your API"
-[rls-vscode]: https://github.com/rust-lang/rls-vscode "Rust support for Visual Studio Code"
+[cargo]: https://doc.rust-lang.org/cargo/ 'Rust package manager'
+[graphql]: https://graphql.org/ 'A query language for your API'
+[rls-vscode]: https://github.com/rust-lang/rls-vscode 'Rust support for Visual Studio Code'
 [rust analyzer]: https://rust-analyzer.github.io/
