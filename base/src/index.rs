@@ -1,4 +1,5 @@
 use crate::data::SimilarResource;
+use dirs;
 use log;
 use std::convert::From;
 use std::fmt;
@@ -8,10 +9,11 @@ use std::sync::{Arc, PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use stopwords::{Stopwords, NLTK};
 use tantivy::collector::TopDocs;
 use tantivy::directory;
+use tantivy::query::{BooleanQuery, Occur, Query, TermQuery};
 use tantivy::schema;
 use tantivy::schema::{IndexRecordOption, TextFieldIndexing, TextOptions};
 use tantivy::tokenizer;
-use tantivy::{Index, IndexReader, IndexWriter, Opstamp};
+use tantivy::{Index, IndexReader, IndexWriter, Opstamp, Term};
 use tique::topterms::{Keywords, TopTerms};
 
 #[derive(Clone)]
@@ -139,17 +141,27 @@ impl IndexService {
         let mut writer = self.writer.write()?;
         Ok(writer.commit()?)
     }
-    pub fn extract_keywords(&self, input: &str, limit: usize) -> Keywords {
-        self.topterms.extract(limit, input)
+    pub fn extract_keywords(&self, content: &str, limit: usize) -> Keywords {
+        self.topterms.extract(limit, content)
     }
     pub fn search_with_keywords(
         &self,
+        source_url: &str,
         keywords: &Keywords,
         limit: usize,
     ) -> Result<Vec<SimilarResource>, Error> {
         let searcher = self.reader.searcher();
-        let top_docs =
-            searcher.search(&keywords.clone().into_query(), &TopDocs::with_limit(limit))?;
+        let keyword_query: Box<dyn Query> = Box::new(keywords.clone().into_query());
+        let source_query = Box::new(TermQuery::new(
+            Term::from_field_text(self.schema.url, source_url),
+            IndexRecordOption::Basic,
+        ));
+        let query = BooleanQuery::from(vec![
+            (Occur::Must, keyword_query),
+            (Occur::MustNot, source_query),
+        ]);
+
+        let top_docs = searcher.search(&query, &TopDocs::with_limit(limit))?;
         let mut similar = Vec::new();
         for (score, address) in top_docs {
             log::info!("Found match {:?} {:?}", &address, &score);

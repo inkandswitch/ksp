@@ -1,7 +1,7 @@
 pub use crate::data::Mutations;
 use crate::data::{
-    InputResource, Link, LinkKind, Open, Query, Resource, ResourceInfo, SimilarResource,
-    SimilarResources, Tag,
+    InputResource, InputSimilar, Link, LinkKind, Open, Query, Resource, ResourceInfo,
+    SimilarResource, SimilarResources, Tag,
 };
 use crate::index::IndexService;
 use crate::store::DataStore;
@@ -170,7 +170,7 @@ impl SimilarResources {
     fn similar(&self, first: i32, state: &State) -> FieldResult<Vec<SimilarResource>> {
         Ok(state
             .index
-            .search_with_keywords(&self.keywords, first as usize)?)
+            .search_with_keywords(&self.source_url, &self.keywords, first as usize)?)
     }
 }
 
@@ -198,9 +198,12 @@ impl Query {
     }
 
     #[graphql(arguments(first(default = 5)))]
-    async fn similar(state: &State, input: String, first: i32) -> SimilarResources {
-        let keywords = state.index.extract_keywords(&input, first as usize);
-        SimilarResources { keywords }
+    async fn similar(state: &State, input: InputSimilar, first: i32) -> SimilarResources {
+        let keywords = state.index.extract_keywords(&input.content, first as usize);
+        SimilarResources {
+            keywords,
+            source_url: input.url.unwrap_or(String::from("")),
+        }
     }
 }
 

@@ -61,6 +61,7 @@ pub struct SimilarResource {
 #[derive(Clone)]
 pub struct SimilarResources {
     pub keywords: Keywords,
+    pub source_url: String,
 }
 
 #[derive(juniper::GraphQLInputObject, Clone, Debug)]
@@ -103,6 +104,12 @@ pub struct Open {
     pub open_ok: bool,
     pub exit_ok: bool,
     pub code: Option<i32>,
+}
+
+#[derive(juniper::GraphQLInputObject, Clone, Debug)]
+pub struct InputSimilar {
+    pub url: Option<String>,
+    pub content: String,
 }
 
 impl From<String> for Resource {
