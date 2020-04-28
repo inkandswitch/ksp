@@ -134,6 +134,8 @@ impl IndexService {
     }
     pub async fn ingest(&self, url: &str, title: &str, body: &str) -> Result<Opstamp, Error> {
         let writer = self.writer.read()?;
+        // Delete all documents with the matching url before adding a new document.
+        writer.delete_term(Term::from_field_text(self.schema.url, &url));
         let doc = self.schema.document(url, title, body)?;
         Ok(writer.add_document(doc))
     }
@@ -166,8 +168,8 @@ impl IndexService {
         for (score, address) in top_docs {
             log::info!("Found match {:?} {:?}", &address, &score);
             let doc = searcher.doc(address)?;
-            log::info!("Doc maps to {:?}", doc);
             let target_url = self.schema.document_url(doc)?;
+            log::info!("Doc maps to {:?}", target_url);
             similar.push(SimilarResource {
                 target_url,
                 similarity_score: score,
