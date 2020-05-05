@@ -49,6 +49,10 @@ by running:
 ./target/debug/knowledge-server scan $YOUR_PATH_HERE
 ```
 
+### Local Storage
+
+Browsing history can be sensitive. That's one of the reasons KSP keeps all its data on your local machine. We haven't built any tools to remove data from KSP, but it stores it data in `~/.knowledge-service/`. Most of the data is stored in a `.sqlite` file, which you can inspect and modify at your own peril, but the full-text TF-IDF data lives in a special format used by the [Tantivy](https://github.com/tantivy-search/tantivy/) library.
+
 ### Hacking Notes
 
 We ran into [issue][rust-lang/rls-vscode#755] with [rls-vscode][] extension. If
