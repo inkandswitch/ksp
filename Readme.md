@@ -14,50 +14,39 @@ At the moment no binaries are distributed, however you can build / run using
 [cargo][]. To create a (debug) build run:
 
 ```sh
-cargo build
-```
-
-You may get a compilation error like this:
-
-```
-`#![feature]` may not be used on the stable release channel
-```
-
-In which case you can run the nightly build of cargo by running:
-
-```sh
 cargo +nightly build
 ```
 
-It will produce `./target/debug/knowledge-server` that you can use to do multiple
-things:
+By default, the build will produce a binary at `./target/debug/knowledge-server`.
 
 #### Server
 
-You can start a knowledge-server by runnig:
+You can start a knowledge-server by running:
 
 ```sh
 ./target/debug/knowledge-server serve
 ```
 
 Once it's running you can explore protocol schema, execute queries / mutations
-using GraphQL IDE at http://localhost:8080/graphiql.
+using GraphQL IDE at http://localhost:8080/graphiql. 
+
+(This won't be very interesting at first, as you won't have submitted any data to it.)
 
 #### Daemon
 
 You can spawn a knowledge-server as a daemon by runing:
 
 ```sh
-./target/debug/knowledge-server deamon
+./target/debug/knowledge-server daemon
 ```
 
 #### Scan / Ingest content
 
-You can scan local filesystem and ingest markdown files into knowledge base
-by running (use your desired path instead):
+You can ingest local markdown files into your knowledge base
+by running:
 
 ```sh
-./target/debug/knowledge-server scan ~/Notes
+./target/debug/knowledge-server scan $YOUR_PATH_HERE
 ```
 
 ### Hacking Notes
