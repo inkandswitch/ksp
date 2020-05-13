@@ -1,15 +1,17 @@
-use crate::schema::{Schema, State as SchemaState};
+use crate::service::Service;
 use async_trait::async_trait;
 use futures::future::BoxFuture;
+use juniper::http::GraphQLRequest;
 use log;
 use std::sync::RwLock;
 use tide::{Middleware, Next, Request, Response, Server};
 
-#[derive(Debug)]
-struct State {
-    pub schema: Schema,
-    pub state: SchemaState,
-}
+// #[derive(Debug)]
+// struct State {
+//     pub schema: Schema,
+//     pub state: SchemaState,
+// }
+type State = Service;
 
 async fn handle_graphiql(_: Request<State>) -> Response {
     Response::new(200)
@@ -21,21 +23,33 @@ async fn handle_graphql(mut request: Request<State>) -> Response {
     log::info!("Received graphql query");
     let json = request.body_json().await;
 
-    let query: juniper::http::GraphQLRequest =
-        json.expect("be able to deserialize the graphql request");
+    let query: GraphQLRequest = json.expect("be able to deserialize the graphql request");
 
-    let state = request.state().state.clone();
-    let schema = &request.state().schema;
-    let root = &schema.root;
+    // TODO: We had to clone here because otherwise data loader would be shared
+    // accross multiple requests which is undesired as:
+    // 1. It would use more and more memory over time.
+    // 2. DB changes would not be picked up.
+    // let state = &request.state().state;
+    // let schema = &request.state().schema;
+    // let root = &schema.root;
 
-    // probably worth making the schema a singleton using lazy_static library
-    let response = query.execute_async(root, &state).await;
-    let status = if response.is_ok() { 200 } else { 400 };
+    // // probably worth making the schema a singleton using lazy_static library
+    // let response = query.execute_async(root, state).await;
+    let state = request.state();
+    let response = state
+        .execute(query, |response| {
+            Response::new(if response.is_ok() { 200 } else { 400 })
+                .body_json(&response)
+                .expect("be able to serialize the graphql response")
+        })
+        .await;
+    // let status = if response.is_ok() { 200 } else { 400 };
     log::info!("Responding to the graphl query");
 
-    Response::new(status)
-        .body_json(&response)
-        .expect("be able to serialize the graphql response")
+    // Response::new(status)
+    //     .body_json(&response)
+    //     .expect("be able to serialize the graphql response")
+    response
 }
 
 async fn handle_root_head(_request: Request<State>) -> Response {
@@ -88,11 +102,12 @@ impl<State: Send + Sync + 'static> Middleware<State> for Headers {
 }
 
 pub async fn activate(address: &str) -> std::io::Result<()> {
-    let schema = Schema::new();
-    let state = State {
-        schema,
-        state: SchemaState::new()?,
-    };
+    // let schema = Schema::new();
+    // let state = State {
+    //     schema,
+    //     state: SchemaState::new()?,
+    // };
+    let state = Service::new()?;
     let headers = Headers::new().set("Server", "Knowledge-Server");
     let mut server = Server::with_state(state);
     server.middleware(headers);

@@ -3,7 +3,8 @@ use crate::resource::Resource;
 use async_std::io;
 use ignore::DirEntry;
 use knowledge_server_base::data::InputTag;
-use knowledge_server_base::schema::{FieldError, Mutations, State};
+// use knowledge_server_base::schema::{FieldError, Mutations, State};
+use knowledge_server_base::service::Service;
 use std::path::Path;
 
 fn markdown_type() -> Result<ignore::types::Types, ignore::Error> {
@@ -37,15 +38,10 @@ pub struct ScanReport {
     pub tags: usize,
 }
 
-pub enum ScanError {
-    IO(io::Error),
-    Mutation(FieldError),
-}
-
 pub async fn scan<'a>(path: &Path, tags: &Vec<&str>, dry_run: bool) -> io::Result<usize> {
     let entries = walk(path);
     let mut n = 0;
-    let service = State::new()?;
+    let service = Service::new()?;
 
     for entry in entries {
         let path = entry.path();
@@ -65,12 +61,11 @@ pub async fn scan<'a>(path: &Path, tags: &Vec<&str>, dry_run: bool) -> io::Resul
         if dry_run {
             println!("{:#?}", data);
         } else {
-            Mutations::ingest(&service, data)
-                .await
-                .map_err(|e| io::Error::new(io::ErrorKind::Other, e.message()))?;
+            service.ingest(data).await?;
             n += 1;
         }
     }
+    service.commit().await?;
 
     Ok(n)
 }

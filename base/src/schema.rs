@@ -1,24 +1,34 @@
 pub use crate::data::Mutations;
 use crate::data::{
-    InputResource, Link, LinkKind, Open, Query, Resource, ResourceInfo, SimilarResource, Tag,
+    InputResource, InputSimilar, Link, LinkKind, Open, Query, Resource, ResourceInfo,
+    SimilarResource, SimilarResources, Tag,
 };
+use crate::index::IndexService;
 use crate::store::DataStore;
 pub use juniper::FieldError;
 use juniper::{FieldResult, RootNode};
 use log;
 use open;
 use std::io;
-
-#[derive(Debug, Clone)]
+use std::sync::Arc;
+#[derive(Debug)]
 pub struct State {
     pub store: DataStore,
+    pub index: Arc<IndexService>,
 }
 impl State {
     pub fn new() -> io::Result<Self> {
         let store = DataStore::open()?;
+        let index = Arc::new(IndexService::open().unwrap());
 
-        Ok(State { store })
+        Ok(State { store, index })
     }
+
+    // pub async fn execute<'a>(&'a self, request: &'a GraphQLRequest) -> GraphQLResponse<'a> {
+    //     let root = &self.schema.root;
+    //     let response: GraphQLResponse<'a> = request.execute_async(root, self).await;
+    //     response
+    // }
 }
 impl juniper::Context for State {}
 
@@ -136,16 +146,43 @@ impl Resource {
     }
 
     // Resources similar to this one.
-    async fn similar(&self, _state: &State) -> Vec<SimilarResource> {
+    #[graphql(arguments(first(default = 5)))]
+    async fn similar(&self, _first: i32, _state: &State) -> Vec<SimilarResource> {
+        // let index = &state.index;
+        // index.search_similar(input, 10);
+
         vec![]
     }
 }
 
 #[juniper::graphql_object(Context = State)]
+impl SimilarResources {
+    /// keywords by which similar resources were identified.
+    fn keywords(&self) -> Vec<String> {
+        self.keywords
+            .terms()
+            .map(|t| t.text())
+            .map(String::from)
+            .collect()
+    }
+    /// Similar resources.
+    #[graphql(arguments(first(default = 5)))]
+    fn similar(&self, first: i32, state: &State) -> FieldResult<Vec<SimilarResource>> {
+        Ok(state
+            .index
+            .search_with_keywords(&self.source_url, &self.keywords, first as usize)?)
+    }
+}
+
+#[juniper::graphql_object(Context = State)]
 impl SimilarResource {
-    /// Other resource it is similar to.
-    async fn target(&self) -> Resource {
-        Resource::from(self.target.clone())
+    /// Similar resource.
+    fn resource(&self) -> Resource {
+        Resource::from(&self.target_url)
+    }
+    /// Score of similarity.
+    fn score(&self) -> f64 {
+        self.similarity_score as f64
     }
 }
 
@@ -158,6 +195,15 @@ impl Query {
     /// finds tags for the given name.
     async fn tags(state: &State, name: String) -> FieldResult<Vec<Tag>> {
         state.store.find_tags_by_name(&name).await
+    }
+
+    #[graphql(arguments(first(default = 5)))]
+    async fn similar(state: &State, input: InputSimilar, first: i32) -> SimilarResources {
+        let keywords = state.index.extract_keywords(&input.content, first as usize);
+        SimilarResources {
+            keywords,
+            source_url: input.url.unwrap_or(String::from("")),
+        }
     }
 }
 
@@ -172,6 +218,11 @@ impl Mutations {
         }
         if let Some(links) = input.links {
             state.store.insert_links(&input.url, &links)?;
+        }
+
+        if let Some(content) = input.content {
+            let index = &state.index;
+            index.ingest(&input.url, &input.title, &content).await?;
         }
         log::info!("Resource was ingested {:}", input.url);
 
